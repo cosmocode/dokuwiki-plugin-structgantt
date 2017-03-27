@@ -1,0 +1,43 @@
+table.plugin_structgantt {
+    max-width: 100%;
+    width: 100%;
+
+    thead th {
+        text-align: center;
+    }
+
+    tbody {
+
+        td {
+            padding: 0;
+            overflow: hidden;
+            min-width: 1px;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        td.task {
+            background-color: @ini_background_alt;
+            position: relative;
+        }
+
+        dl.flyout {
+            display: none;
+        }
+
+        td.task:hover dl.flyout,
+        dl.flyout:hover {
+            display: block;
+            position: fixed;
+            z-index: 100;
+            background-color: @ini_background;
+            border: solid 1px @ini_border;
+            text-align: left;
+            padding: 1em;
+
+            dd {
+                margin: 0;
+            }
+        }
+    }
+}
