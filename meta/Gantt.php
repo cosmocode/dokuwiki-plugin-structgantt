@@ -73,6 +73,9 @@ class Gantt {
     /** @var  int days */
     protected $days;
 
+    /** @var  bool do not show saturday and sunday */
+    protected $skipWeekends;
+
     /**
      * Initialize the Aggregation renderer and executes the search
      *
@@ -91,6 +94,9 @@ class Gantt {
         $this->columns = $searchConfig->getColumns();
         $this->result = $this->searchConfig->execute();
         $this->resultCount = $this->searchConfig->getCount();
+
+        $conf = $searchConfig->getConf();
+        $this->skipWeekends = $conf['skipweekends'];
 
         $this->initColumnRefs();
         $this->initMinMax();
@@ -174,8 +180,6 @@ class Gantt {
             return;
         }
 
-        // FIXME do we need ceil?
-
         $this->renderer->doc .= '<table class="plugin_structgantt">';
 
         $this->renderHeaders();
@@ -214,7 +218,7 @@ class Gantt {
         if($this->days < 14) {
             $format = 'j'; // days
         } elseif($this->days < 60) {
-            $format = 'W'; // week numbers
+            $format = '\wW'; // week numbers
         } else {
             $format = 'F'; // months
         }
@@ -305,10 +309,9 @@ class Gantt {
      * @link based on http://stackoverflow.com/a/31046319/172068
      * @param string $start as YYYY-MM-DD
      * @param string $end as YYYY-MM-DD
-     * @param bool $skipWeekends
      * @return int
      */
-    protected function countDays($start, $end, $skipWeekends = false) {
+    protected function countDays($start, $end) {
         if($start > $end) list($start, $end) = array($end, $start);
         $days = 0;
 
@@ -320,7 +323,7 @@ class Gantt {
 
         /** @var \DateTime $date */
         foreach($period as $date) {
-            if($skipWeekends && (int) $date->format('N') >= 6) {
+            if($this->skipWeekends && (int) $date->format('N') >= 6) {
                 continue;
             } else {
                 $days++;
@@ -336,10 +339,9 @@ class Gantt {
      * @param string $start as YYYY-MM-DD
      * @param string $end as YYYY-MM-DD
      * @param string $format a format string as understood by date(), used for grouping
-     * @param bool $skipWeekends
      * @return array
      */
-    protected function makeHeaders($start, $end, $format, $skipWeekends = false) {
+    protected function makeHeaders($start, $end, $format) {
         if($start > $end) list($start, $end) = array($end, $start);
         $headers = array();
 
@@ -351,7 +353,7 @@ class Gantt {
 
         /** @var \DateTime $date */
         foreach($period as $date) {
-            if($skipWeekends && (int) $date->format('N') >= 6) {
+            if($this->skipWeekends && (int) $date->format('N') >= 6) {
                 continue;
             } else {
                 $ident = $date->format($format);
