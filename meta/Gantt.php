@@ -12,41 +12,25 @@ use dokuwiki\plugin\struct\types\DateTime;
 
 class Gantt {
 
-    /**
-     * @var string the page id of the page this is rendered to
-     */
-    protected $id;
-    /**
-     * @var string the Type of renderer used
-     */
+    /** @var string the Type of renderer used */
     protected $mode;
-    /**
-     * @var \Doku_Renderer the DokuWiki renderer used to create the output
-     */
+
+    /** @var \Doku_Renderer the DokuWiki renderer used to create the output */
     protected $renderer;
-    /**
-     * @var SearchConfig the configured search - gives access to columns etc.
-     */
+
+    /** @var SearchConfig the configured search - gives access to columns etc. */
     protected $searchConfig;
 
-    /**
-     * @var Column[] the list of columns to be displayed
-     */
+    /** @var Column[] the list of columns to be displayed */
     protected $columns;
 
-    /**
-     * @var  Value[][] the search result
-     */
+    /** @var  Value[][] the search result */
     protected $result;
 
-    /**
-     * @var int number of all results
-     */
+    /** @var int number of all results */
     protected $resultCount;
 
-    /**
-     * @var string[] the result PIDs for each row
-     */
+    /** @var string[] the result PIDs for each row */
     protected $resultPIDs;
 
     /** @var int column number containing the start date */
@@ -87,7 +71,6 @@ class Gantt {
      * @param SearchConfig $searchConfig
      */
     public function __construct($id, $mode, \Doku_Renderer $renderer, SearchConfig $searchConfig) {
-        $this->id = $id;
         $this->mode = $mode;
         $this->renderer = $renderer;
         $this->searchConfig = $searchConfig;
@@ -145,6 +128,11 @@ class Gantt {
         }
     }
 
+    /**
+     * Figure out the minimum and maximum dates and number of days inbetween
+     *
+     * @throws StructException when the range is not at least two days
+     */
     protected function initMinMax() {
         $min = PHP_INT_MAX;
         $max = 0;
@@ -174,6 +162,9 @@ class Gantt {
         $this->days = $days;
     }
 
+    /**
+     * Output the chart
+     */
     public function render() {
         if($this->mode !== 'xhtml') {
             $this->renderer->cdata('no other renderer than xhtml supported for struct gantt');
@@ -181,17 +172,13 @@ class Gantt {
         }
 
         $this->renderer->doc .= '<table class="plugin_structgantt">';
-
         $this->renderHeaders();
-
         $this->renderer->doc .= '<tbody>';
         foreach($this->result as $row) {
             $this->renderRow($row);
         }
         $this->renderer->doc .= '</tbody>';
         $this->renderer->doc .= '</table>';
-
-        #$this->renderer->code(print_r($this->result, true));
     }
 
     /**
@@ -297,10 +284,6 @@ class Gantt {
         }
 
         $this->renderer->doc .= '</tr>';
-    }
-
-    protected function renderPopup($row) {
-
     }
 
     /**
