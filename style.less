@@ -1,9 +1,30 @@
 table.plugin_structgantt {
-    max-width: 100%;
-    width: 100%;
 
-    thead th {
+    table-layout: fixed;
+
+    th.today {
+        background-color: @ini_text;
+    }
+
+    tfoot th,
+    tfoot td,
+    thead th,
+    thead td {
         text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    tr.days td {
+        font-weight: normal;
+        font-size: 60%;
+        cursor: default;
+        &.today {
+            background-color: @ini_text;
+            color: @ini_background;
+        }
     }
 
     tbody {

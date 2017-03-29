@@ -54,8 +54,14 @@ class Gantt {
     /** @var  string last date */
     protected $maxDate;
 
-    /** @var  int days */
+    /** @var  \DateTime[] all the days */
     protected $days;
+
+    /** @var  int number of days */
+    protected $daynum;
+
+    /** @var int the scaling to use */
+    protected $scale = 1;
 
     /** @var  bool do not show saturday and sunday */
     protected $skipWeekends;
@@ -152,7 +158,8 @@ class Gantt {
             if($end && $end > $max) $max = $end;
         }
 
-        $days = $this->countDays($min, $max);
+        $days = $this->listDays($min, $max);
+        $daynum = count($days);
         if($days <= 1) {
             throw new StructException('Not enough variation in dates to create a range');
         }
@@ -160,6 +167,9 @@ class Gantt {
         $this->minDate = $min;
         $this->maxDate = $max;
         $this->days = $days;
+        $this->daynum = $daynum;
+        $this->scale = $daynum / 85; // each day should have at least 1% space, 15% for the header
+        if($this->scale < 1) $this->scale = 1;
     }
 
     /**
@@ -171,14 +181,23 @@ class Gantt {
             return;
         }
 
-        $this->renderer->doc .= '<table class="plugin_structgantt">';
+        $width = 100 * $this->scale;
+        $this->renderer->doc .= '<div class="table">';
+        $this->renderer->doc .= '<table class="plugin_structgantt" style="width: ' . $width . '%">';
+        $this->renderColGroup();
+        $this->renderer->doc .= '<thead>';
         $this->renderHeaders();
+        $this->renderer->doc .= '</thead>';
         $this->renderer->doc .= '<tbody>';
         foreach($this->result as $row) {
             $this->renderRow($row);
         }
         $this->renderer->doc .= '</tbody>';
+        $this->renderer->doc .= '<tfoot>';
+        $this->renderDayRow();
+        $this->renderer->doc .= '</tfoot>';
         $this->renderer->doc .= '</table>';
+        $this->renderer->doc .= '</div>';
     }
 
     /**
@@ -202,32 +221,58 @@ class Gantt {
      */
     protected function renderHeaders() {
         // define the resolution
-        if($this->days < 14) {
+        if($this->daynum < 14) {
             $format = 'j'; // days
-        } elseif($this->days < 60) {
+        } elseif($this->daynum < 60) {
             $format = '\wW'; // week numbers
         } else {
             $format = 'F'; // months
         }
         $headers = $this->makeHeaders($this->minDate, $this->maxDate, $format);
 
-        // set the width of each day
-        $headwidth = 15;
-        $daywidth = (100 - $headwidth) / $this->days;
-        $this->renderer->doc .= '<colgroup>';
-        $this->renderer->doc .= '<col style="width:' . $headwidth . '%"/>';
-        for($i = 0; $i < $this->days; $i++) {
-            $this->renderer->doc .= '<col style="width:' . $daywidth . '%"/>';
-        }
-        $this->renderer->doc .= '</colgroup>';
-
-        // output the header
-        $this->renderer->doc .= '<thead>';
+        $this->renderer->doc .= '<tr>';
         $this->renderer->doc .= '<th></th>';
         foreach($headers as $name => $days) {
             $this->renderer->doc .= '<th colspan="' . $days . '">' . $name . '</th>';
         }
-        $this->renderer->doc .= '</thead>';
+        $this->renderer->doc .= '</tr>';
+        $this->renderDayRow();
+    }
+
+    /**
+     * Calculates how wide a day should be and creates an appropriate colgroup
+     */
+    protected function renderColGroup() {
+
+        $headwidth = 15 * $this->scale;
+        $daywidth = (100 * $this->scale - $headwidth) / $this->daynum;
+
+        $this->renderer->doc .= '<colgroup>';
+        $this->renderer->doc .= '<col style="width:' . $headwidth . '%" />';
+        foreach($this->days as $day) {
+            $this->renderer->doc .= '<col style="width:' . $daywidth . '%" />';
+        }
+        $this->renderer->doc .= '</colgroup>';
+
+    }
+
+    /**
+     * Render a row for the days and the today pointer
+     */
+    protected function renderDayRow() {
+        $today = date('Y-m-d');
+        $this->renderer->doc .= '<tr class="days">';
+        $this->renderer->doc .= '<th></th>';
+        foreach($this->days as $day) {
+            if($day->format('Y-m-d') == $today) {
+                $class = 'today';
+            } else {
+                $class = '';
+            }
+            $text = substr($day->format('l'), 0, 1);
+            $this->renderer->doc .= '<td title="' . $day->format('Y-m-d') . '" class="' . $class . '">' . $text . '</td>';
+        }
+        $this->renderer->doc .= '</tr>';
     }
 
     /**
@@ -240,9 +285,9 @@ class Gantt {
         $end = $row[$this->colrefEnd]->getCompareValue();
 
         if($start && $end) {
-            $r1 = $this->countDays($start, $this->minDate);
-            $r2 = $this->countDays($end, $start);
-            $r3 = $this->countDays($this->maxDate, $end);
+            $r1 = $this->listDays($start, $this->minDate);
+            $r2 = $this->listDays($end, $start);
+            $r3 = $this->listDays($this->maxDate, $end);
         } else {
             $r1 = $this->days;
             $r2 = 0;
@@ -256,14 +301,14 @@ class Gantt {
         $this->renderer->doc .= '</th>';
 
         // period before the task
-        for($i = 0; $i < $r1; $i++) {
-            $this->renderer->doc .= '<td></td>';
+        foreach($r1 as $day) {
+            $this->renderer->doc .= '<td title="' . $day->format('Y-m-d') . '"></td>';
         }
 
         // the task itself
         if($r2) {
             $style = $this->getColorStyle($row);
-            $this->renderer->doc .= '<td colspan="' . $r2 . '" class="task" ' . $style . '>';
+            $this->renderer->doc .= '<td colspan="' . count($r2) . '" class="task" ' . $style . '>';
             $row[$this->titleRef]->render($this->renderer, $this->mode);
 
             $this->renderer->doc .= '<dl class="flyout">';
@@ -279,24 +324,24 @@ class Gantt {
         }
 
         // period after the task
-        for($i = 0; $i < $r3; $i++) {
-            $this->renderer->doc .= '<td></td>';
+        foreach($r3 as $day) {
+            $this->renderer->doc .= '<td title="' . $day->format('Y-m-d') . '"></td>';
         }
 
         $this->renderer->doc .= '</tr>';
     }
 
     /**
-     * Returns the number of days in the given period
+     * Returns the days in the given period
      *
      * @link based on http://stackoverflow.com/a/31046319/172068
      * @param string $start as YYYY-MM-DD
      * @param string $end as YYYY-MM-DD
-     * @return int
+     * @return \DateTime[]
      */
-    protected function countDays($start, $end) {
+    protected function listDays($start, $end) {
         if($start > $end) list($start, $end) = array($end, $start);
-        $days = 0;
+        $days = array();
 
         $period = new \DatePeriod(
             new \DateTime($start),
@@ -309,7 +354,7 @@ class Gantt {
             if($this->skipWeekends && (int) $date->format('N') >= 6) {
                 continue;
             } else {
-                $days++;
+                $days[] = $date;
             }
         }
 
