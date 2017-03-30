@@ -1,7 +1,7 @@
 base   structgantt
 author Andreas Gohr
 email  gohr@cosmocode.de
-date   2017-03-29
+date   2017-03-30
 name   structgantt plugin
 desc   Display struct data as Gantt
 url    https://www.dokuwiki.org/structgantt
