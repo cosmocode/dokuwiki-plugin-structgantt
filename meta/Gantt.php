@@ -244,7 +244,7 @@ class Gantt {
      */
     protected function renderColGroup() {
 
-        $headwidth = 15 * $this->scale;
+        $headwidth = 15;
         $daywidth = (100 * $this->scale - $headwidth) / $this->daynum;
 
         $this->renderer->doc .= '<colgroup>';
