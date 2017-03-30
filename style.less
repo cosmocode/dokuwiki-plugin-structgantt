@@ -39,7 +39,7 @@ table.plugin_structgantt {
 
         td.task {
             background-color: @ini_background_alt;
-            position: relative;
+            position: static;
         }
 
         dl.flyout {
@@ -49,7 +49,7 @@ table.plugin_structgantt {
         td.task:hover dl.flyout,
         dl.flyout:hover {
             display: block;
-            position: fixed;
+            position: absolute;
             z-index: 100;
             background-color: @ini_background;
             border: solid 1px @ini_border;
