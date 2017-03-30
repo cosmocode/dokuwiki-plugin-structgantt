@@ -10,7 +10,7 @@
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
-class action_plugin_struct_ajax extends DokuWiki_Action_Plugin {
+class action_plugin_structgantt extends DokuWiki_Action_Plugin {
 
     /**
      * Registers a callback function for a given event
