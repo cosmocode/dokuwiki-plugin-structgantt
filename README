@@ -3,7 +3,7 @@ structgantt Plugin for DokuWiki
 Display struct data as Gantt
 
 All documentation for this plugin can be found at
-https://www.dokuwiki.org/structgantt
+https://www.dokuwiki.org/plugin:structgantt
 
 If you install this plugin manually, make sure it is installed in
 lib/plugins/structgantt/ - if the folder is called different it
