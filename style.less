@@ -1,5 +1,4 @@
 table.plugin_structgantt {
-
     table-layout: fixed;
 
     th.today {
@@ -39,7 +38,6 @@ table.plugin_structgantt {
 
         td.task {
             background-color: @ini_background_alt;
-            position: static;
         }
 
         dl.flyout {
@@ -50,6 +48,8 @@ table.plugin_structgantt {
         dl.flyout:hover {
             display: block;
             position: absolute;
+            left: 25%;
+            width: 50%;
             z-index: 100;
             background-color: @ini_background;
             border: solid 1px @ini_border;
