@@ -158,7 +158,7 @@ class Gantt {
             if($end && $end > $max) $max = $end;
         }
 
-        $days = $this->listDays($min, $max);
+        $days = $this->listDays($min, $max, 0, 1);
         $daynum = count($days);
         if($days <= 1) {
             throw new StructException('Not enough variation in dates to create a range');
@@ -285,9 +285,9 @@ class Gantt {
         $end = $row[$this->colrefEnd]->getCompareValue();
 
         if($start && $end) {
-            $r1 = $this->listDays($start, $this->minDate);
-            $r2 = $this->listDays($end, $start);
-            $r3 = $this->listDays($this->maxDate, $end);
+            $r1 = $this->listDays($this->minDate, $start);
+            $r2 = $this->listDays($start, $end, 0, 1);
+            $r3 = $this->listDays($end, $this->maxDate, 1, 1);
         } else {
             $r1 = $this->days;
             $r2 = 0;
@@ -337,16 +337,18 @@ class Gantt {
      * @link based on http://stackoverflow.com/a/31046319/172068
      * @param string $start as YYYY-MM-DD
      * @param string $end as YYYY-MM-DD
+     * @param int $modstart days to add to start
+     * @param int $modend days to add to end
      * @return \DateTime[]
      */
-    protected function listDays($start, $end) {
+    protected function listDays($start, $end, $modstart=0, $modend=0) {
         if($start > $end) list($start, $end) = array($end, $start);
         $days = array();
 
         $period = new \DatePeriod(
-            new \DateTime($start),
+            (new \DateTime($start))->modify($modstart.' day'),
             new \DateInterval('P1D'),
-            new \DateTime($end)
+            (new \DateTime($end))->modify($modend.' day')
         );
 
         /** @var \DateTime $date */
@@ -376,7 +378,7 @@ class Gantt {
         $period = new \DatePeriod(
             new \DateTime($start),
             new \DateInterval('P1D'),
-            new \DateTime($end)
+            (new \DateTime($end))->modify('+1 day')
         );
 
         /** @var \DateTime $date */
