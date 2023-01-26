@@ -61,18 +61,17 @@ class Gantt
     /** @var  int number of days */
     protected $daynum;
 
-    /** @var int the scaling to use */
-    protected $scale = 1;
-
     /** @var  bool do not show saturday and sunday */
     protected $skipWeekends;
 
     /** @var string[] interval formats used */
     protected $interval = [
-        'header' => 'j',
-        'period' => 'P1D',
-        'short' => 'q',
-        'long' => 'Y-m-d',
+        'header' => 'j', // shown in header
+        'period' => 'P1D', // smallest shown interval
+        'next' => '+1 day', // one more interval
+        'short' => 'q', // interval label
+        'long' => 'Y-m-d', // interval long label
+        'comp' => 'Y-m-d', // sortable interval
     ];
 
     /**
@@ -95,7 +94,7 @@ class Gantt
         $this->resultCount = $this->searchConfig->getCount();
 
         $conf = $searchConfig->getConf();
-        $this->skipWeekends = $conf['skipweekends'];
+        $this->skipWeekends = $conf['skipweekends'] ?? false;
 
         $this->initColumnRefs();
         $this->initMinMax();
@@ -184,37 +183,47 @@ class Gantt
             $this->interval = [
                 'header' => 'j', // days
                 'period' => 'P1D',
-                'short' => 'q',
+                'next' => '+1 day',
+                'short' => '\\\\q',
                 'long' => 'Y-m-d',
+                'comp' => 'Y-m-d'
             ];
         } elseif ($daynum < 52) {
             $this->interval = [
                 'header' => '\wW', // week numbers
                 'period' => 'P1D',
-                'short' => 'q',
+                'next' => '+1 day',
+                'short' => '\\\\q',
                 'long' => 'Y-m-d',
+                'comp' => 'Y-m-d',
             ];
         } elseif ($daynum < 360) {
             $this->interval = [
                 'header' => 'F', // months
                 'period' => 'P1D',
-                'short' => 'q',
+                'next' => '+1 day',
+                'short' => '\\\\q',
                 'long' => 'Y-m-d',
+                'comp' => 'Y-m-d',
             ];
         } elseif ($daynum < 600) {
             $this->interval = [
                 'header' => 'M \'y', // months and year
                 'period' => 'P1W', // weeks
+                'next' => '+1 week',
                 'short' => '\wW',
-                'long' => '\wW Y',
+                'long' => '\wW o',
+                'comp' => 'o-W',
             ];
             $this->skipWeekends = false;
         } else {
             $this->interval = [
                 'header' => '\\\\Q \'y', // quarter and year
                 'period' => 'P1M', // months
+                'next' => '+1 month',
                 'short' => 'M',
                 'long' => 'F Y',
+                'comp' => 'Y-m',
             ];
             $this->skipWeekends = false;
         }
@@ -223,8 +232,6 @@ class Gantt
         $this->maxDate = $max;
         $this->days = $this->listDays($min, $max);
         $this->daynum = $daynum;
-        $this->scale = $daynum / 85; // each day should have at least 1% space, 15% for the header
-        if ($this->scale < 1) $this->scale = 1;
     }
 
     /**
@@ -237,10 +244,8 @@ class Gantt
             return;
         }
 
-        $width = 100; //* $this->scale;
         $this->renderer->doc .= '<div class="table">';
-        $this->renderer->doc .= '<table class="plugin_structgantt" style="width: ' . $width . '%">';
-        $this->renderColGroup();
+        $this->renderer->doc .= '<table class="plugin_structgantt">';
         $this->renderer->doc .= '<thead>';
         $this->renderHeaders();
         $this->renderer->doc .= '</thead>';
@@ -290,24 +295,6 @@ class Gantt
     }
 
     /**
-     * Calculates how wide a day should be and creates an appropriate colgroup
-     */
-    protected function renderColGroup()
-    {
-
-        $headwidth = 15;
-        $daywidth = (100 * $this->scale - $headwidth) / $this->daynum;
-
-        $this->renderer->doc .= '<colgroup>';
-        $this->renderer->doc .= '<col style="width:' . $headwidth . '%" />';
-        foreach ($this->days as $day) {
-            $this->renderer->doc .= '<col style="width:' . $daywidth . '%" />';
-        }
-        $this->renderer->doc .= '</colgroup>';
-
-    }
-
-    /**
      * Render a row for the days and the today pointer
      */
     protected function renderDayRow()
@@ -321,8 +308,8 @@ class Gantt
             } else {
                 $class = '';
             }
-            $text = $this->format($day, $this->interval['short']);
-            $title = $this->format($day, $this->interval['long']);
+            $text = $this->intervalFormat($day, 'short');
+            $title = $this->intervalFormat($day, 'long');
             $this->renderer->doc .= '<td title="' . $title . '" class="' . $class . '">' . $text . '</td>';
         }
         $this->renderer->doc .= '</tr>';
@@ -343,9 +330,12 @@ class Gantt
             $r2 = $this->listDays($start, $end);
             $r3 = $this->listDays($end, $this->maxDate);
 
-            if($r1) array_pop($r1); // last period is task
-            if($r3) array_shift($r3); // first period is task
-
+            while ($r1 && ($this->intervalFormat(end($r1), 'comp') >= $this->intervalFormat($r2[0], 'comp'))) {
+                array_pop($r1);
+            }
+            while ($r3 && ($this->intervalFormat($r3[0], 'comp') <= $this->intervalFormat(end($r2), 'comp'))) {
+                array_shift($r3);
+            }
         } else {
             $r1 = $this->days;
             $r2 = 0;
@@ -360,7 +350,7 @@ class Gantt
 
         // period before the task
         foreach ($r1 as $day) {
-            $this->renderer->doc .= '<td title="' . $this->format($day, $this->interval['long']) . '"></td>';
+            $this->renderer->doc .= '<td title="' . $this->intervalFormat($day, 'long') . '"></td>';
         }
 
         // the task itself
@@ -383,7 +373,7 @@ class Gantt
 
         // period after the task
         foreach ($r3 as $day) {
-            $this->renderer->doc .= '<td title="' . $this->format($day, $this->interval['long']) . '"></td>';
+            $this->renderer->doc .= '<td title="' . $this->intervalFormat($day, 'long') . '"></td>';
         }
 
         $this->renderer->doc .= '</tr>';
@@ -406,7 +396,7 @@ class Gantt
         $period = new \DatePeriod(
             new \DateTime($start),
             new \DateInterval($this->interval['period']),
-            (new \DateTime($end))->modify('+1 day') // Include End Date
+            (new \DateTime($end))->modify($this->interval['next']) // Include End Date (flag is only available in PHP8)
         );
 
         /** @var \DateTime $date */
@@ -436,7 +426,7 @@ class Gantt
         $period = new \DatePeriod(
             new \DateTime($start),
             new \DateInterval($this->interval['period']),
-            (new \DateTime($end))->modify('+1 day')  // Include End Date
+            (new \DateTime($end))->modify($this->interval['next']) // Include End Date (flag is only available in PHP8)
         );
 
         /** @var \DateTime $date */
@@ -444,7 +434,7 @@ class Gantt
             if ($this->skipWeekends && (int)$date->format('N') >= 6) {
                 continue;
             } else {
-                $ident = $this->format($date, $this->interval['header']);
+                $ident = $this->intervalFormat($date, 'header');
                 if (!isset($headers[$ident])) {
                     $headers[$ident] = 1;
                 } else {
@@ -460,11 +450,12 @@ class Gantt
      * Wrapper around DateTime->format() to implement our own placeholders
      *
      * @param \DateTime $date
-     * @param string $format
+     * @param string $formatname
      * @return string
      */
-    protected function format(\DateTime $date, $format)
+    protected function intervalFormat(\DateTime $date, $formatname)
     {
+        $format = $this->interval[$formatname];
         $label = $date->format($format);
         return str_replace(
             [
