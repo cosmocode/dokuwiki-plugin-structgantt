@@ -1,5 +1,6 @@
 table.plugin_structgantt {
     table-layout: fixed;
+    min-width: 100%;
 
     th.today {
         background-color: @ini_text;
@@ -19,6 +20,9 @@ table.plugin_structgantt {
     tr.days td {
         font-weight: normal;
         font-size: 60%;
+        padding-left: 0.1em;
+        padding-right: 0.1em;
+        min-width: min-content;
         cursor: default;
         &.today {
             background-color: @ini_text;
@@ -27,6 +31,10 @@ table.plugin_structgantt {
     }
 
     tbody {
+        th {
+            min-width: 5em;
+            max-width: 15%;
+        }
 
         td {
             padding: 0;
