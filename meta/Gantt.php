@@ -2,7 +2,7 @@
 
 namespace dokuwiki\plugin\structgantt\meta;
 
-use dokuwiki\plugin\struct\meta\Column;
+use dokuwiki\plugin\struct\meta\Aggregation;
 use dokuwiki\plugin\struct\meta\SearchConfig;
 use dokuwiki\plugin\struct\meta\StructException;
 use dokuwiki\plugin\struct\meta\Value;
@@ -10,29 +10,8 @@ use dokuwiki\plugin\struct\types\Color;
 use dokuwiki\plugin\struct\types\Date;
 use dokuwiki\plugin\struct\types\DateTime;
 
-class Gantt
+class Gantt extends Aggregation
 {
-
-    /** @var string the Type of renderer used */
-    protected $mode;
-
-    /** @var \Doku_Renderer the DokuWiki renderer used to create the output */
-    protected $renderer;
-
-    /** @var SearchConfig the configured search - gives access to columns etc. */
-    protected $searchConfig;
-
-    /** @var Column[] the list of columns to be displayed */
-    protected $columns;
-
-    /** @var  Value[][] the search result */
-    protected $result;
-
-    /** @var int number of all results */
-    protected $resultCount;
-
-    /** @var string[] the result PIDs for each row */
-    protected $resultPIDs;
 
     /** @var int column number containing the start date */
     protected $colrefStart = -1;
@@ -74,30 +53,20 @@ class Gantt
         'comp' => 'Y-m-d', // sortable interval
     ];
 
-    /**
-     * Initialize the Aggregation renderer and executes the search
-     *
-     * You need to call @param string $id
-     * @param string $mode
-     * @param \Doku_Renderer $renderer
-     * @param SearchConfig $searchConfig
-     * @see render() on the resulting object.
-     *
-     */
+    /** @inheritdoc */
     public function __construct($id, $mode, \Doku_Renderer $renderer, SearchConfig $searchConfig)
     {
-        $this->mode = $mode;
-        $this->renderer = $renderer;
-        $this->searchConfig = $searchConfig;
-        $this->columns = $searchConfig->getColumns();
-        $this->result = $this->searchConfig->execute();
-        $this->resultCount = $this->searchConfig->getCount();
+        parent::__construct($id, $mode, $renderer, $searchConfig);
+        if ($this->mode !== 'xhtml') {
+            return;
+        }
 
         $conf = $searchConfig->getConf();
         $this->skipWeekends = $conf['skipweekends'] ?? false;
-
         $this->initColumnRefs();
-        $this->initMinMax();
+        if ($this->resultCount) {
+            $this->initMinMax();
+        }
     }
 
     /**
@@ -234,31 +203,40 @@ class Gantt
         $this->daynum = $daynum;
     }
 
-    /**
-     * Output the chart
-     */
-    public function render()
+    /** @inheritdoc */
+    public function getScopeClasses()
+    {
+        $classes = parent::getScopeClasses();
+        $classes[] = 'table';
+        return $classes;
+    }
+
+
+    /** @inheritdoc */
+    public function render($showNotFound = false)
     {
         if ($this->mode !== 'xhtml') {
-            $this->renderer->cdata('no other renderer than xhtml supported for struct gantt');
             return;
         }
 
-        $this->renderer->doc .= '<div class="table">';
-        $this->renderer->doc .= '<table class="plugin_structgantt">';
-        $this->renderer->doc .= '<thead>';
-        $this->renderHeaders();
-        $this->renderer->doc .= '</thead>';
-        $this->renderer->doc .= '<tbody>';
-        foreach ($this->result as $row) {
-            $this->renderRow($row);
+        if ($this->resultCount) {
+            $this->renderer->doc .= '<table>';
+            $this->renderer->doc .= '<thead>';
+            $this->renderHeaders();
+            $this->renderer->doc .= '</thead>';
+            $this->renderer->doc .= '<tbody>';
+            foreach ($this->result as $row) {
+                $this->renderRow($row);
+            }
+            $this->renderer->doc .= '</tbody>';
+            $this->renderer->doc .= '<tfoot>';
+            $this->renderDayRow();
+            $this->renderer->doc .= '</tfoot>';
+            $this->renderer->doc .= '</table>';
+        } elseif ($showNotFound) {
+            global $lang;
+            $this->renderer->cdata($lang['nothingfound']);
         }
-        $this->renderer->doc .= '</tbody>';
-        $this->renderer->doc .= '<tfoot>';
-        $this->renderDayRow();
-        $this->renderer->doc .= '</tfoot>';
-        $this->renderer->doc .= '</table>';
-        $this->renderer->doc .= '</div>';
     }
 
     /**
