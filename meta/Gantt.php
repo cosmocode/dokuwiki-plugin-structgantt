@@ -12,7 +12,6 @@ use dokuwiki\plugin\struct\types\DateTime;
 
 class Gantt extends Aggregation
 {
-
     /** @var int column number containing the start date */
     protected $colrefStart = -1;
 
@@ -79,24 +78,20 @@ class Gantt extends Aggregation
         $ref = 0;
         foreach ($this->columns as $column) {
             if (
-                is_a($column->getType(), Date::class) ||
-                is_a($column->getType(), DateTime::class)
+                $column->getType() instanceof Date ||
+                $column->getType() instanceof \dokuwiki\plugin\struct\types\DateTime
             ) {
                 if ($this->colrefStart == -1) {
                     $this->colrefStart = $ref;
                 } else {
                     $this->colrefEnd = $ref;
                 }
-            } elseif (is_a($column->getType(), Color::class)) {
+            } elseif ($column->getType() instanceof Color) {
                 $this->colrefColor = $ref;
-            } else {
-                if ($this->labelRef == -1) {
-                    $this->labelRef = $ref;
-                } else {
-                    if ($this->titleRef == -1) {
-                        $this->titleRef = $ref;
-                    }
-                }
+            } elseif ($this->labelRef == -1) {
+                $this->labelRef = $ref;
+            } elseif ($this->titleRef == -1) {
+                $this->titleRef = $ref;
             }
             $ref++;
         }
@@ -341,7 +336,6 @@ class Gantt extends Aggregation
                 $this->renderer->doc .= '<dd>';
                 $value->render($this->renderer, $this->mode);
                 $this->renderer->doc .= '<dd>';
-
             }
             $this->renderer->doc .= '</dl>';
 
@@ -367,8 +361,8 @@ class Gantt extends Aggregation
      */
     protected function listDays($start, $end)
     {
-        if ($start > $end) list($start, $end) = array($end, $start);
-        $days = array();
+        if ($start > $end) [$start, $end] = [$end, $start];
+        $days = [];
 
         $period = new \DatePeriod(
             new \DateTime($start),
@@ -397,8 +391,8 @@ class Gantt extends Aggregation
      */
     protected function makeHeaders($start, $end)
     {
-        if ($start > $end) list($start, $end) = array($end, $start);
-        $headers = array();
+        if ($start > $end) [$start, $end] = [$end, $start];
+        $headers = [];
 
         $period = new \DatePeriod(
             new \DateTime($start),
