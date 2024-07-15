@@ -64,9 +64,6 @@ class Gantt extends Aggregation
         $conf = $searchConfig->getConf();
         $this->skipWeekends = $conf['skipweekends'] ?? false;
         $this->initColumnRefs();
-        if ($this->resultCount) {
-            $this->initMinMax();
-        }
     }
 
     /**
@@ -128,7 +125,7 @@ class Gantt extends Aggregation
         $max = 0;
 
         /** @var Value[] $row */
-        foreach ($this->result as $row) {
+        foreach ($this->searchConfig->getResult()->getRows() as $row) {
             $start = $row[$this->colrefStart]->getCompareValue();
             $start = explode(' ', $start); // cut off time
             $start = array_shift($start);
@@ -219,13 +216,15 @@ class Gantt extends Aggregation
             return;
         }
 
-        if ($this->resultCount) {
+        if ($this->searchConfig->getCount()) {
+            $this->initMinMax();
+
             $this->renderer->doc .= '<table>';
             $this->renderer->doc .= '<thead>';
             $this->renderHeaders();
             $this->renderer->doc .= '</thead>';
             $this->renderer->doc .= '<tbody>';
-            foreach ($this->result as $row) {
+            foreach ($this->searchConfig->getResult()->getRows() as $row) {
                 $this->renderRow($row);
             }
             $this->renderer->doc .= '</tbody>';
