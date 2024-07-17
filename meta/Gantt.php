@@ -12,6 +12,10 @@ use dokuwiki\plugin\struct\types\DateTime;
 
 class Gantt extends Aggregation
 {
+    public $mode;
+    public $columns;
+    public $searchConfig;
+    public $renderer;
     /** @var int column number containing the start date */
     protected $colrefStart = -1;
 
