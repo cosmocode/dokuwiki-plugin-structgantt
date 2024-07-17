@@ -196,15 +196,6 @@ class Gantt extends Aggregation
     }
 
     /** @inheritdoc */
-    public function getScopeClasses()
-    {
-        $classes = parent::getScopeClasses();
-        $classes[] = 'table';
-        return $classes;
-    }
-
-
-    /** @inheritdoc */
     public function render($showNotFound = false)
     {
         if ($this->mode !== 'xhtml') {
@@ -214,6 +205,7 @@ class Gantt extends Aggregation
         if ($this->searchConfig->getCount()) {
             $this->initMinMax();
 
+            $this->renderer->doc .= '<div class="table">';
             $this->renderer->doc .= '<table>';
             $this->renderer->doc .= '<thead>';
             $this->renderHeaders();
@@ -227,6 +219,7 @@ class Gantt extends Aggregation
             $this->renderDayRow();
             $this->renderer->doc .= '</tfoot>';
             $this->renderer->doc .= '</table>';
+            $this->renderer->doc .= '</div>';
         } elseif ($showNotFound) {
             global $lang;
             $this->renderer->cdata($lang['nothingfound']);
