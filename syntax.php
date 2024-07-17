@@ -10,6 +10,7 @@ use dokuwiki\plugin\structgantt\meta\Gantt;
  */
 class syntax_plugin_structgantt extends syntax_plugin_struct_table
 {
+    public $Lexer;
     /** @var string which class to use for output */
     protected $tableclass = Gantt::class;
 
